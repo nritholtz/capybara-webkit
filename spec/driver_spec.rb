@@ -187,6 +187,70 @@ describe Capybara::Webkit::Driver do
     end
   end
 
+  context "a JQuery submit form" do
+    let(:driver) do
+      driver_for_app do
+
+
+        get '/submit' do
+          <<-HTML
+            <html>
+              <body>
+                <form action="/form" method="POST">
+                  <input name="submit" type="submit" />
+                </form>
+              </body>
+            </html>
+          HTML
+        end
+
+        post '/form' do
+          <<-HTML
+            <html>
+              <head>
+                <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.js"></script>
+                <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.2/jquery-ui.js"></script>
+                <script src="https://ajax.aspnetcdn.com/ajax/jquery.validate/1.8.1/jquery.validate.min.js"></script>
+              </head>
+              <body>
+                <form id='paypal-form' action='/paypal' method="POST">
+                  <input type="hidden" name="test" value='123' />
+                </form>
+                <script>
+                      $( document ).ready(function(){
+                        $("#paypal-form").submit();
+                      })
+                </script>
+              </body>
+            </html>
+          HTML
+        end
+
+        post '/paypal' do
+          <<-HTML
+          <html>
+            <head>
+            </head>
+            <body>
+              <input id='paypal_username' />
+            </body>
+          </html>
+          HTML
+        end
+      end
+    end
+
+    it "should be canceled after reset" do
+      visit("/submit")
+      driver.find_xpath("//input").first.click
+      driver.reset!
+      visit("/submit")
+      driver.find_xpath("//input").first.click
+      sleep 2
+      driver.html.should =~ /paypal_username/
+    end
+  end
+
   context "redirect app" do
     let(:driver) do
       driver_for_app do
